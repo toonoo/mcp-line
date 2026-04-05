@@ -1,0 +1,26 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    required:
+      - lineChannelAccessToken
+    properties:
+      lineChannelAccessToken:
+        type: string
+        description: "LINE Messaging API Channel Access Token — หาได้ที่ LINE Developers Console (https://developers.line.biz/console/)"
+      lineDefaultUserId:
+        type: string
+        description: "LINE userId ของผู้รับ default สำหรับ send_text และ send_image (optional) — ขึ้นต้นด้วย U..."
+        default: ""
+  commandFunction: |-
+    (config) => ({
+      command: "node",
+      args: ["dist/index.js"],
+      env: {
+        LINE_CHANNEL_ACCESS_TOKEN: config.lineChannelAccessToken,
+        LINE_DEFAULT_USER_ID: config.lineDefaultUserId || ""
+      }
+    })
+  exampleConfig:
+    lineChannelAccessToken: "your_channel_access_token_here"
+    lineDefaultUserId: "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
