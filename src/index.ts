@@ -1,5 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { createServer } from "http";
+import { randomUUID } from "crypto";
 import { z } from "zod";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -258,5 +261,74 @@ server.tool(
 
 // ─── Start Server ─────────────────────────────────────────────────────────────
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : null;
+
+if (PORT) {
+  // HTTP mode — สำหรับ deploy บน cloud / Smithery
+  const sessions = new Map<string, StreamableHTTPServerTransport>();
+
+  const httpServer = createServer(async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept, Mcp-Session-Id");
+
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
+    if (pathname !== "/mcp") {
+      res.writeHead(404);
+      res.end("Not Found");
+      return;
+    }
+
+    // อ่าน body
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(chunk as Buffer);
+    const rawBody = Buffer.concat(chunks).toString();
+
+    const sessionId = req.headers["mcp-session-id"] as string | undefined;
+
+    // session เดิม
+    if (sessionId && sessions.has(sessionId)) {
+      const transport = sessions.get(sessionId)!;
+      await transport.handleRequest(req, res, rawBody);
+      return;
+    }
+
+    // session ใหม่
+    if (req.method === "POST") {
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+      });
+
+      transport.onclose = () => {
+        if (transport.sessionId) sessions.delete(transport.sessionId);
+      };
+
+      await server.connect(transport);
+
+      if (transport.sessionId) {
+        sessions.set(transport.sessionId, transport);
+      }
+
+      await transport.handleRequest(req, res, rawBody);
+      return;
+    }
+
+    res.writeHead(400);
+    res.end("Bad Request");
+  });
+
+  httpServer.listen(PORT, () => {
+    console.error(`mcp-line HTTP server running on port ${PORT}`);
+    console.error(`MCP endpoint: http://localhost:${PORT}/mcp`);
+  });
+} else {
+  // stdio mode — สำหรับ Claude Desktop / Claude Code
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+}
