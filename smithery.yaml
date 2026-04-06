@@ -14,8 +14,8 @@ startCommand:
         default: ""
   commandFunction: |-
     (config) => ({
-      command: "node",
-      args: ["dist/index.js"],
+      command: "npx",
+      args: ["-y", "@studiotoonoo/mcp-line@latest"],
       env: {
         LINE_CHANNEL_ACCESS_TOKEN: config.lineChannelAccessToken,
         LINE_DEFAULT_USER_ID: config.lineDefaultUserId || ""

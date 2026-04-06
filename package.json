@@ -1,9 +1,16 @@
 {
-  "name": "mcp-line",
+  "name": "@studiotoonoo/mcp-line",
   "version": "1.0.0",
   "description": "MCP server for sending messages to LINE via LINE Messaging API",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "mcp-line": "dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "smithery.yaml"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
@@ -14,7 +21,9 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@smithery/cli": "^4.7.4",
     "@types/node": "^22.0.0",
+    "esbuild": "^0.27.0",
     "tsx": "^4.19.0",
     "typescript": "^5.5.3"
   }
