@@ -6,7 +6,9 @@
       "mcp__mcp-line__send_text",
       "WebFetch(domain:smithery.ai)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(npm pack:*)",
+      "Bash(npm whoami:*)"
     ]
   }
 }

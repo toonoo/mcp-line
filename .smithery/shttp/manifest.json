@@ -1,0 +1,119 @@
+{
+  "payload": {
+    "type": "hosted",
+    "stateful": false,
+    "hasAuthAdapter": false,
+    "serverCard": {
+      "serverInfo": {
+        "name": "mcp-line",
+        "version": "1.0.0"
+      },
+      "tools": [
+        {
+          "name": "send_text",
+          "description": "ส่งข้อความ text ไปยัง LINE user ที่กำหนด",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 5000,
+                "description": "ข้อความที่ต้องการส่ง (สูงสุด 5000 ตัวอักษร)"
+              },
+              "userId": {
+                "type": "string",
+                "description": "LINE userId ของผู้รับ (ถ้าไม่ระบุจะใช้ LINE_DEFAULT_USER_ID จาก env)"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "additionalProperties": false,
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "execution": {
+            "taskSupport": "forbidden"
+          }
+        },
+        {
+          "name": "send_image",
+          "description": "ส่งรูปภาพไปยัง LINE user ที่กำหนด",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "originalContentUrl": {
+                "type": "string",
+                "format": "uri",
+                "description": "URL รูปภาพขนาดเต็ม (HTTPS, JPEG/PNG/GIF, สูงสุด 10MB)"
+              },
+              "previewImageUrl": {
+                "type": "string",
+                "format": "uri",
+                "description": "URL รูปภาพ thumbnail (HTTPS, JPEG/PNG/GIF, สูงสุด 1MB)"
+              },
+              "userId": {
+                "type": "string",
+                "description": "LINE userId ของผู้รับ (ถ้าไม่ระบุจะใช้ LINE_DEFAULT_USER_ID จาก env)"
+              }
+            },
+            "required": [
+              "originalContentUrl",
+              "previewImageUrl"
+            ],
+            "additionalProperties": false,
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "execution": {
+            "taskSupport": "forbidden"
+          }
+        },
+        {
+          "name": "broadcast_text",
+          "description": "broadcast ข้อความ text ไปยังทุกคนที่เป็น friend ของ bot",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 5000,
+                "description": "ข้อความที่ต้องการ broadcast (สูงสุด 5000 ตัวอักษร)"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "additionalProperties": false,
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "execution": {
+            "taskSupport": "forbidden"
+          }
+        },
+        {
+          "name": "get_bot_info",
+          "description": "ดึงข้อมูล LINE bot เช่น ชื่อ, รูปโปรไฟล์, จำนวน follower",
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "execution": {
+            "taskSupport": "forbidden"
+          }
+        }
+      ],
+      "resources": [],
+      "prompts": []
+    },
+    "source": {
+      "commit": "cd814f2e9c3f241fac5134ba0e1aa14614b2362a",
+      "branch": "main"
+    }
+  },
+  "artifacts": {
+    "module": "module.js",
+    "sourcemap": "module.js.map"
+  }
+}
