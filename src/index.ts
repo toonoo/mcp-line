@@ -52,16 +52,8 @@ interface LineErrorResponse {
 
 // ─── Environment ──────────────────────────────────────────────────────────────
 
-const CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+const CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN ?? "";
 const DEFAULT_USER_ID = process.env.LINE_DEFAULT_USER_ID;
-
-if (!CHANNEL_ACCESS_TOKEN) {
-  console.error(
-    "ERROR: LINE_CHANNEL_ACCESS_TOKEN environment variable is required.\n" +
-      "Get it from: https://developers.line.biz/console/ → Your Channel → Messaging API → Channel access token"
-  );
-  process.exit(1);
-}
 
 // ─── LINE API Client ──────────────────────────────────────────────────────────
 
@@ -70,6 +62,11 @@ async function lineRequest<T>(
   path: string,
   body?: unknown
 ): Promise<T> {
+  if (!CHANNEL_ACCESS_TOKEN) {
+    throw new Error(
+      "LINE_CHANNEL_ACCESS_TOKEN is not set. กรุณากรอก token ใน Smithery config หรือตั้งค่า environment variable"
+    );
+  }
   const url = `${LINE_API_BASE}${path}`;
   const response = await fetch(url, {
     method,
