@@ -289,6 +289,23 @@ async function main() {
       }
 
       const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
+
+      // server-card.json สำหรับ Smithery scan tools
+      if (pathname === "/.well-known/mcp/server-card.json") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          name: "mcp-line",
+          description: "MCP server for sending messages to LINE via LINE Messaging API",
+          tools: [
+            { name: "send_text", description: "ส่งข้อความ text ไปยัง LINE user ที่กำหนด" },
+            { name: "send_image", description: "ส่งรูปภาพไปยัง LINE user ที่กำหนด" },
+            { name: "broadcast_text", description: "broadcast ข้อความ text ไปยังทุกคนที่เป็น friend ของ bot" },
+            { name: "get_bot_info", description: "ดึงข้อมูล LINE bot เช่น ชื่อ, รูปโปรไฟล์, จำนวน follower" },
+          ],
+        }));
+        return;
+      }
+
       if (pathname !== "/mcp") {
         res.writeHead(404);
         res.end("Not Found");
