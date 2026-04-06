@@ -104,161 +104,172 @@ function errorResult(err: unknown) {
   };
 }
 
-// ─── MCP Server ───────────────────────────────────────────────────────────────
+// ─── MCP Server Builder ───────────────────────────────────────────────────────
 
-const server = new McpServer({
-  name: "mcp-line",
-  version: "1.0.0",
-});
+function buildServer(): McpServer {
+  const srv = new McpServer({
+    name: "mcp-line",
+    version: "1.0.0",
+  });
 
-// Tool: send_text
-server.tool(
-  "send_text",
-  "ส่งข้อความ text ไปยัง LINE user ที่กำหนด",
-  {
-    text: z
-      .string()
-      .min(1)
-      .max(5000)
-      .describe("ข้อความที่ต้องการส่ง (สูงสุด 5000 ตัวอักษร)"),
-    userId: z
-      .string()
-      .optional()
-      .describe(
-        "LINE userId ของผู้รับ (ถ้าไม่ระบุจะใช้ LINE_DEFAULT_USER_ID จาก env)"
-      ),
-  },
-  async ({ text, userId }) => {
-    const targetId = userId ?? DEFAULT_USER_ID;
-    if (!targetId) {
-      return errorResult(
-        "ไม่มี userId — กรุณาระบุ userId หรือตั้งค่า LINE_DEFAULT_USER_ID ใน environment"
-      );
-    }
-    try {
-      await lineRequest<object>("POST", "/message/push", {
-        to: targetId,
-        messages: [{ type: "text", text }],
-      } satisfies LinePushRequest);
-      return {
-        content: [
-          { type: "text", text: `ส่งข้อความสำเร็จ → userId: ${targetId}` },
-        ],
-      };
-    } catch (err) {
-      return errorResult(err);
-    }
-  }
-);
-
-// Tool: send_image
-server.tool(
-  "send_image",
-  "ส่งรูปภาพไปยัง LINE user ที่กำหนด",
-  {
-    originalContentUrl: z
-      .string()
-      .url()
-      .describe("URL รูปภาพขนาดเต็ม (HTTPS, JPEG/PNG/GIF, สูงสุด 10MB)"),
-    previewImageUrl: z
-      .string()
-      .url()
-      .describe("URL รูปภาพ thumbnail (HTTPS, JPEG/PNG/GIF, สูงสุด 1MB)"),
-    userId: z
-      .string()
-      .optional()
-      .describe(
-        "LINE userId ของผู้รับ (ถ้าไม่ระบุจะใช้ LINE_DEFAULT_USER_ID จาก env)"
-      ),
-  },
-  async ({ originalContentUrl, previewImageUrl, userId }) => {
-    const targetId = userId ?? DEFAULT_USER_ID;
-    if (!targetId) {
-      return errorResult(
-        "ไม่มี userId — กรุณาระบุ userId หรือตั้งค่า LINE_DEFAULT_USER_ID ใน environment"
-      );
-    }
-    try {
-      await lineRequest<object>("POST", "/message/push", {
-        to: targetId,
-        messages: [{ type: "image", originalContentUrl, previewImageUrl }],
-      } satisfies LinePushRequest);
-      return {
-        content: [
-          { type: "text", text: `ส่งรูปภาพสำเร็จ → userId: ${targetId}` },
-        ],
-      };
-    } catch (err) {
-      return errorResult(err);
-    }
-  }
-);
-
-// Tool: broadcast_text
-server.tool(
-  "broadcast_text",
-  "broadcast ข้อความ text ไปยังทุกคนที่เป็น friend ของ bot",
-  {
-    text: z
-      .string()
-      .min(1)
-      .max(5000)
-      .describe("ข้อความที่ต้องการ broadcast (สูงสุด 5000 ตัวอักษร)"),
-  },
-  async ({ text }) => {
-    try {
-      await lineRequest<object>("POST", "/message/broadcast", {
-        messages: [{ type: "text", text }],
-      } satisfies LineBroadcastRequest);
-      return {
-        content: [{ type: "text", text: "Broadcast สำเร็จ — ส่งถึงทุก friend ของ bot แล้ว" }],
-      };
-    } catch (err) {
-      return errorResult(err);
-    }
-  }
-);
-
-// Tool: get_bot_info
-server.tool(
-  "get_bot_info",
-  "ดึงข้อมูล LINE bot เช่น ชื่อ, รูปโปรไฟล์, จำนวน follower",
-  {},
-  async () => {
-    const [botInfoResult, followersResult] = await Promise.allSettled([
-      lineRequest<LineBotInfoResponse>("GET", "/info"),
-      lineRequest<LineFollowersResponse>("GET", "/followers/ids?limit=1"),
-    ]);
-
-    const lines: string[] = [];
-
-    if (botInfoResult.status === "fulfilled") {
-      const info = botInfoResult.value;
-      lines.push(`ชื่อ Bot: ${info.displayName}`);
-      lines.push(`Basic ID: ${info.basicId}`);
-      lines.push(`User ID: ${info.userId}`);
-      if (info.pictureUrl) lines.push(`รูปโปรไฟล์: ${info.pictureUrl}`);
-      lines.push(`Chat Mode: ${info.chatMode}`);
-    } else {
-      lines.push(`ดึงข้อมูล bot ไม่ได้: ${botInfoResult.reason}`);
-    }
-
-    if (followersResult.status === "fulfilled") {
-      const followers = followersResult.value;
-      if (followers.total !== undefined) {
-        lines.push(`จำนวน Followers: ${followers.total}`);
+  // Tool: send_text
+  srv.tool(
+    "send_text",
+    "ส่งข้อความ text ไปยัง LINE user ที่กำหนด",
+    {
+      text: z
+        .string()
+        .min(1)
+        .max(5000)
+        .describe("ข้อความที่ต้องการส่ง (สูงสุด 5000 ตัวอักษร)"),
+      userId: z
+        .string()
+        .optional()
+        .describe(
+          "LINE userId ของผู้รับ (ถ้าไม่ระบุจะใช้ LINE_DEFAULT_USER_ID จาก env)"
+        ),
+    },
+    async ({ text, userId }) => {
+      const targetId = userId ?? DEFAULT_USER_ID;
+      if (!targetId) {
+        return errorResult(
+          "ไม่มี userId — กรุณาระบุ userId หรือตั้งค่า LINE_DEFAULT_USER_ID ใน environment"
+        );
       }
-    } else {
-      lines.push(`ดึงจำนวน follower ไม่ได้ (อาจต้องใช้ verified account): ${followersResult.reason}`);
+      try {
+        await lineRequest<object>("POST", "/message/push", {
+          to: targetId,
+          messages: [{ type: "text", text }],
+        } satisfies LinePushRequest);
+        return {
+          content: [
+            { type: "text", text: `ส่งข้อความสำเร็จ → userId: ${targetId}` },
+          ],
+        };
+      } catch (err) {
+        return errorResult(err);
+      }
     }
+  );
 
-    return { content: [{ type: "text", text: lines.join("\n") }] };
-  }
-);
+  // Tool: send_image
+  srv.tool(
+    "send_image",
+    "ส่งรูปภาพไปยัง LINE user ที่กำหนด",
+    {
+      originalContentUrl: z
+        .string()
+        .url()
+        .describe("URL รูปภาพขนาดเต็ม (HTTPS, JPEG/PNG/GIF, สูงสุด 10MB)"),
+      previewImageUrl: z
+        .string()
+        .url()
+        .describe("URL รูปภาพ thumbnail (HTTPS, JPEG/PNG/GIF, สูงสุด 1MB)"),
+      userId: z
+        .string()
+        .optional()
+        .describe(
+          "LINE userId ของผู้รับ (ถ้าไม่ระบุจะใช้ LINE_DEFAULT_USER_ID จาก env)"
+        ),
+    },
+    async ({ originalContentUrl, previewImageUrl, userId }) => {
+      const targetId = userId ?? DEFAULT_USER_ID;
+      if (!targetId) {
+        return errorResult(
+          "ไม่มี userId — กรุณาระบุ userId หรือตั้งค่า LINE_DEFAULT_USER_ID ใน environment"
+        );
+      }
+      try {
+        await lineRequest<object>("POST", "/message/push", {
+          to: targetId,
+          messages: [{ type: "image", originalContentUrl, previewImageUrl }],
+        } satisfies LinePushRequest);
+        return {
+          content: [
+            { type: "text", text: `ส่งรูปภาพสำเร็จ → userId: ${targetId}` },
+          ],
+        };
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  // Tool: broadcast_text
+  srv.tool(
+    "broadcast_text",
+    "broadcast ข้อความ text ไปยังทุกคนที่เป็น friend ของ bot",
+    {
+      text: z
+        .string()
+        .min(1)
+        .max(5000)
+        .describe("ข้อความที่ต้องการ broadcast (สูงสุด 5000 ตัวอักษร)"),
+    },
+    async ({ text }) => {
+      try {
+        await lineRequest<object>("POST", "/message/broadcast", {
+          messages: [{ type: "text", text }],
+        } satisfies LineBroadcastRequest);
+        return {
+          content: [{ type: "text", text: "Broadcast สำเร็จ — ส่งถึงทุก friend ของ bot แล้ว" }],
+        };
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  // Tool: get_bot_info
+  srv.tool(
+    "get_bot_info",
+    "ดึงข้อมูล LINE bot เช่น ชื่อ, รูปโปรไฟล์, จำนวน follower",
+    {},
+    async () => {
+      const [botInfoResult, followersResult] = await Promise.allSettled([
+        lineRequest<LineBotInfoResponse>("GET", "/info"),
+        lineRequest<LineFollowersResponse>("GET", "/followers/ids?limit=1"),
+      ]);
+
+      const lines: string[] = [];
+
+      if (botInfoResult.status === "fulfilled") {
+        const info = botInfoResult.value;
+        lines.push(`ชื่อ Bot: ${info.displayName}`);
+        lines.push(`Basic ID: ${info.basicId}`);
+        lines.push(`User ID: ${info.userId}`);
+        if (info.pictureUrl) lines.push(`รูปโปรไฟล์: ${info.pictureUrl}`);
+        lines.push(`Chat Mode: ${info.chatMode}`);
+      } else {
+        lines.push(`ดึงข้อมูล bot ไม่ได้: ${botInfoResult.reason}`);
+      }
+
+      if (followersResult.status === "fulfilled") {
+        const followers = followersResult.value;
+        if (followers.total !== undefined) {
+          lines.push(`จำนวน Followers: ${followers.total}`);
+        }
+      } else {
+        lines.push(`ดึงจำนวน follower ไม่ได้ (อาจต้องใช้ verified account): ${followersResult.reason}`);
+      }
+
+      return { content: [{ type: "text", text: lines.join("\n") }] };
+    }
+  );
+
+  return srv;
+}
+
+// ─── Sandbox Export (สำหรับ Smithery scan) ───────────────────────────────────
+
+export function createSandboxServer() {
+  return buildServer();
+}
 
 // ─── Start Server ─────────────────────────────────────────────────────────────
 
 async function main() {
+  const server = buildServer();
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : null;
 
   if (PORT) {
