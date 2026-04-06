@@ -61,9 +61,10 @@ const DEFAULT_USER_ID = process.env.LINE_DEFAULT_USER_ID;
 async function lineRequest<T>(
   method: "GET" | "POST",
   path: string,
+  token: string,
   body?: unknown
 ): Promise<T> {
-  if (!CHANNEL_ACCESS_TOKEN) {
+  if (!token) {
     throw new Error(
       "LINE_CHANNEL_ACCESS_TOKEN is not set. กรุณากรอก token ใน Smithery config หรือตั้งค่า environment variable"
     );
@@ -72,7 +73,7 @@ async function lineRequest<T>(
   const response = await fetch(url, {
     method,
     headers: {
-      Authorization: `Bearer ${CHANNEL_ACCESS_TOKEN}`,
+      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -107,7 +108,10 @@ function errorResult(err: unknown) {
 
 // ─── MCP Server Builder ───────────────────────────────────────────────────────
 
-function buildServer(): McpServer {
+function buildServer(
+  token: string = CHANNEL_ACCESS_TOKEN,
+  defaultUserId: string | undefined = DEFAULT_USER_ID
+): McpServer {
   const srv = new McpServer({
     name: "mcp-line",
     version: "1.0.0",
@@ -131,14 +135,14 @@ function buildServer(): McpServer {
         ),
     },
     async ({ text, userId }) => {
-      const targetId = userId ?? DEFAULT_USER_ID;
+      const targetId = userId ?? defaultUserId;
       if (!targetId) {
         return errorResult(
           "ไม่มี userId — กรุณาระบุ userId หรือตั้งค่า LINE_DEFAULT_USER_ID ใน environment"
         );
       }
       try {
-        await lineRequest<object>("POST", "/message/push", {
+        await lineRequest<object>("POST", "/message/push", token, {
           to: targetId,
           messages: [{ type: "text", text }],
         } satisfies LinePushRequest);
@@ -174,14 +178,14 @@ function buildServer(): McpServer {
         ),
     },
     async ({ originalContentUrl, previewImageUrl, userId }) => {
-      const targetId = userId ?? DEFAULT_USER_ID;
+      const targetId = userId ?? defaultUserId;
       if (!targetId) {
         return errorResult(
           "ไม่มี userId — กรุณาระบุ userId หรือตั้งค่า LINE_DEFAULT_USER_ID ใน environment"
         );
       }
       try {
-        await lineRequest<object>("POST", "/message/push", {
+        await lineRequest<object>("POST", "/message/push", token, {
           to: targetId,
           messages: [{ type: "image", originalContentUrl, previewImageUrl }],
         } satisfies LinePushRequest);
@@ -209,7 +213,7 @@ function buildServer(): McpServer {
     },
     async ({ text }) => {
       try {
-        await lineRequest<object>("POST", "/message/broadcast", {
+        await lineRequest<object>("POST", "/message/broadcast", token, {
           messages: [{ type: "text", text }],
         } satisfies LineBroadcastRequest);
         return {
@@ -228,8 +232,8 @@ function buildServer(): McpServer {
     {},
     async () => {
       const [botInfoResult, followersResult] = await Promise.allSettled([
-        lineRequest<LineBotInfoResponse>("GET", "/info"),
-        lineRequest<LineFollowersResponse>("GET", "/followers/ids?limit=1"),
+        lineRequest<LineBotInfoResponse>("GET", "/info", token),
+        lineRequest<LineFollowersResponse>("GET", "/followers/ids?limit=1", token),
       ]);
 
       const lines: string[] = [];
@@ -328,6 +332,11 @@ async function main() {
 
       // session ใหม่
       if (req.method === "POST") {
+        const reqUrl = new URL(req.url ?? "/", "http://localhost");
+        const reqToken = reqUrl.searchParams.get("LINE_CHANNEL_ACCESS_TOKEN") ?? CHANNEL_ACCESS_TOKEN;
+        const reqUserId = reqUrl.searchParams.get("LINE_DEFAULT_USER_ID") ?? DEFAULT_USER_ID ?? undefined;
+        const sessionServer = buildServer(reqToken, reqUserId);
+
         const transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
         });
@@ -336,7 +345,7 @@ async function main() {
           if (transport.sessionId) sessions.delete(transport.sessionId);
         };
 
-        await server.connect(transport);
+        await sessionServer.connect(transport);
 
         if (transport.sessionId) {
           sessions.set(transport.sessionId, transport);
