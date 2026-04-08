@@ -1,4 +1,16 @@
 #!/usr/bin/env node
+
+// ตรวจสอบ Node.js version ก่อนรัน
+const [nodeMajor] = process.versions.node.split(".").map(Number);
+if (nodeMajor < 18) {
+  console.error(
+    `Error: mcp-line requires Node.js 18 or later.\n` +
+    `Current version: ${process.versions.node}\n` +
+    `Please update Node.js at: https://nodejs.org/`
+  );
+  process.exit(1);
+}
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";

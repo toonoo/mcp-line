@@ -1,11 +1,14 @@
 {
   "name": "@studiotoonoo/mcp-line",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "MCP server for sending messages to LINE via LINE Messaging API",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
     "mcp-line": "dist/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "files": [
     "dist/",
